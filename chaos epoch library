@@ -9018,22 +9018,20 @@ function storeCurrToSC() {
     `Authors Note: ${state.authorsNoteStorage}`;
  // initialize description 
 if (!currSC.description) {
-   currSC.description = '';
+    currSC.description = '';
 }
 
- // Add heatlogs to description only if its not empty
-  if (state.heatlogs) {
+// Add heatlogs if present
+if (state.heatlogs) {
+    currSC.description = `Log ${state.turnCount} | ${state.heatlogs}\n` + currSC.description;
+}
 
-//ensure each new log starts on a new line
- if (currSC.description !== '') {
-    currSC.description += '\n';
+// Trim from the bottom if longer than 3000 chars
+if (currSC.description.length > 3000) {
+    currSC.description = currSC.description.slice(0, 3000);
+    log("Trimming currSC.description to keep only recent logs");
 }
-  currSC.description += `Log ${state.turnCount} | ${state.heatlogs}`;
-  }
-  if (currSC.description.length > 3000) {
-currSC.description = currSC.description.slice (-3000);
-log("Trimming currSC description to keep only recent logs");
-}
+
 }
 
 function retrieveCurrFromSC() {
