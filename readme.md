@@ -1,3 +1,6 @@
+massive thanks to the creators of all these amazing scripts. i simply got bubblegum and stacked them together. shout out to all the makers of
+Auto Cards, Story Arc Engine, True Auto Stats, Narrative guidance overhual, Random events, ReputeX, System requests, Epoch time System
+
 ⏳ Epoch Time System
 A self-contained time-tracking and world clock module for AI Dungeon scenarios. Tracks absolute and relative time across player actions, sleep/travel skips, and narrative arcs. Designed to function beyond the limitations of standard JavaScript Date—from the dawn of time to the heat death of the universe.
 
