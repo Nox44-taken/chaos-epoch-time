@@ -46,22 +46,16 @@ Great for plot beats, pressure clocks, foreshadowing, or surprise twists
 
 🔁 @rhythmSchedule – Weekly & Daily Rhythms
 
-Monday:
-04:30 EXT. CALLE wood-smoke drifts low as bakers fire their ovens
-04:45 EXT. CANAL the Matins bell rolls across the water
-05:10–05:30 EXT. WATERWAY Gondoliers steady their oars
+#Monday:
+# 04:30 EXT. CALLE wood-smoke drifts low as bakers fire their ovens
+# 04:45 EXT. CANAL the Matins bell rolls across the water
+# 05:10–05:30 EXT. WATERWAY Gondoliers steady their oars
 
-Everyday:
-02:00 bell tower tolls
+#Everyday:
+# 02:00 bell tower tolls
 
-Weekend:
-07:30 late market opens, smell of fried dough drifting across the plaza
-
-Everyday:
-02:00 bell tower tolls
-
-Weekend:
-07:30 late market opens, smell of fried dough drifting across the plaza
+#Weekend:
+# 07:30 late market opens, smell of fried dough drifting across the plaza
 
 
 
@@ -124,19 +118,19 @@ If no card is present, one is auto-generated with sane defaults (year = 2025):
 
 // Timeline-Based Events:
 //@eraTimeline:
-//08:00 2025-09-01 - 15:00 2025-09-01: First Day of School
-//05:30-06:00 hurry, sunrise is coming at 6. Dawnlight burns, blinds, and weakens
+//#08:00 2025-09-01 - 15:00 2025-09-01: First Day of School
+//#05:30-06:00 hurry, sunrise is coming at 6. Dawnlight burns, blinds, and weakens
 
 // Weekly/Daily Rhythms:
 //@rhythmSchedule:
-//Monday:
-// 04:30 EXT. CALLE wood-smoke drifts low as bakers fire their ovens
-//Everyday:
-//02:00 bell tower tolls
-//Weekend:
-//07:30 late market opens
+//#Monday:
+//# 04:30 EXT. CALLE wood-smoke drifts low as bakers fire their ovens
+//#Everyday:
+//# 02:00 bell tower tolls
+//#Weekend:
+//# 07:30 late market opens
 
 
 
 📜 License
-MIT permissive license
+MIT permissive license.
