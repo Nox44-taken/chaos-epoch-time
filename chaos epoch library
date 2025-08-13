@@ -1,1 +1,758 @@
 
+/** Epoch Time System
+ * MIT License
+ * Copyright (c) 2025 Xilmanaath
+ * Thanks to LewdLeah for the card helper functions and LSIv2.
+ */
+
+const Epoch = (() => {
+    const epochCardTitle = 'Epoch';
+    const timeIncrementMinutes = 6;
+    const instructionalText = '[ enforce circadian rhythm. World continues indifferently—in medias res. Only print HH:MM YYYY-MM-DD headers on time skips (sleep, travel, subjective or explicit drift, scene change) ]';
+    const eventInstruction = '[ stage event actions as sluglines ]';
+    const dayNames = ["Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+    ];
+    const MIN_PER_HOUR = 60n;
+    const MIN_PER_DAY = 24n * MIN_PER_HOUR;
+    const MIN_PER_WEEK = 7n * MIN_PER_DAY;
+    const MIN_PER_MONTH = 43800n;
+    const MIN_PER_YEAR = 525600n;
+    const TIMESTAMP_PATTERNS = [
+        // Normal: HH:MM YYYY-MM-DD (e.g. 13:22 2025-09-01)
+        /\b(?<hour>\d{2}):(?<minute>\d{2})(?::\d{2})?\s+(?<year>-?\d{1,16})-(?<month>\d{2})-(?<day>\d{2})\b/,
+
+        // Reversed: YYYY-MM-DD HH:MM (e.g. 2025-09-01 13:22)
+        /\b(?<year>-?\d{1,16})-(?<month>\d{2})-(?<day>\d{2})\s+(?<hour>\d{2}):(?<minute>\d{2})(?::\d{2})?\b/
+    ];
+
+    const normalizeLine = (line) => {
+        return line
+            .replace(/[–—]/g, '-') // normalize all dash variants to plain "-"
+            .replace(/\s+/g, ' ') // collapse multiple spaces
+            .trim();
+    };
+
+
+    class EpochDate {
+        constructor(year, month = 1, day = 1, hour = 0, minute = 0) {
+            [year, month, day] = EpochDate.normalizeDate(year, month, day);
+            // store as BigInt for unbounded range
+            this.year = BigInt(year);
+            this.month = month; // 1–12
+            this.day = day; // 1–31
+            this.hour = hour; // 0–23
+            this.minute = minute; // 0–59
+        }
+
+        // Date-like getters
+        getFullYear() {
+            return Number(this.year);
+        }
+        getMonth() {
+            return this.month - 1;
+        } // zero-based
+        getDate() {
+            return this.day;
+        }
+        getHours() {
+            return this.hour;
+        }
+        getMinutes() {
+            return this.minute;
+        }
+
+        // equivalent to .getTime(), but in BigInt minutes
+        getTime() {
+            // naive: 1 year = 365d, 1 mo = 30d
+            const Y = this.year * MIN_PER_YEAR;
+            const M = BigInt(this.month - 1) * MIN_PER_MONTH;
+            const D = BigInt(this.day - 1) * MIN_PER_DAY;
+            const T = BigInt(this.hour) * MIN_PER_HOUR + BigInt(this.minute);
+            return Y + M + D + T;
+        }
+
+        // convert back
+        static fromTotalMinutes(total) {
+            const totalMin = BigInt(total);
+            const baseY = MIN_PER_YEAR,
+                baseM = MIN_PER_MONTH,
+                baseD = MIN_PER_DAY,
+                baseH = MIN_PER_HOUR;
+
+            // 1) compute year = floor(totalMin / baseY)
+            let year;
+            if (totalMin >= 0n) {
+                year = totalMin / baseY;
+            } else {
+                // for negative values, add (Y−1) before trunc to achieve floor
+                year = -((-totalMin + baseY - 1n) / baseY);
+            }
+
+            // 2) compute a non-negative remainder
+            let rem = totalMin - year * baseY;
+            // rem is now in [0 .. baseY−1]
+
+            // 3) peel off months, days, hours, minutes
+            const mon = rem / baseM;
+            rem %= baseM;
+            const day = rem / baseD;
+            rem %= baseD;
+            const hr = rem / baseH;
+            const min = rem % baseH;
+
+            return new EpochDate(
+                year,
+                Number(mon) + 1,
+                Number(day) + 1,
+                Number(hr),
+                Number(min)
+            );
+        }
+
+        // mimic subtraction: returns BigInt minutes
+        diffInMinutes(other) {
+            return this.getTime() - other.getTime();
+        }
+
+        /* Zeller’s Congruence allows us to calculate the day of the week for any date, including pre-Gregorian, negative years, and dates way outside the native Date object’s range.
+         */
+        getDay() {
+            let y = Number(this.year);
+            let m = this.month;
+            const d = this.day;
+
+            if (m < 3) {
+                m += 12;
+                y -= 1;
+            }
+
+            const K = y % 100;
+            const J = Math.floor(y / 100);
+
+            const h = (d + Math.floor(13 * (m + 1) / 5) + K + Math.floor(K / 4) + Math.floor(J / 4) + 5 * J) % 7;
+
+            // Zeller's returns: 0 = Saturday, 1 = Sunday, ..., 6 = Friday
+            // Convert to JS-style: 0 = Sunday, ..., 6 = Saturday
+            return (h + 6) % 7;
+        };
+
+        static isLeapYear(year) {
+            year = Number(year);
+            return (year % 4 === 0) && (year % 100 !== 0 || year % 400 === 0);
+        }
+
+        static daysInMonth(year, month) {
+            const thirtyOne = [1, 3, 5, 7, 8, 10, 12];
+            const thirty = [4, 6, 9, 11];
+            if (thirtyOne.includes(month)) return 31;
+            if (thirty.includes(month)) return 30;
+            if (month === 2) return EpochDate.isLeapYear(year) ? 29 : 28;
+            return 0; // invalid month
+        }
+
+        /* 2025-04-31 becomes 2025-05-01, or 2025-12-40 becomes 2026-01-09.
+         */
+        static normalizeDate(year, month, day) {
+            year = BigInt(year);
+            month = Number(month);
+            day = Number(day);
+            if (month < 1) month = 1;
+            if (day < 1) day = 1;
+
+            while (true) {
+                const max = EpochDate.daysInMonth(year, month);
+                if (day <= max) break;
+                day -= max;
+                month += 1;
+                if (month > 12) {
+                    const overflowYears = Math.floor((month - 1) / 12);
+                    month = ((month - 1) % 12) + 1;
+                    year = BigInt(year) + BigInt(overflowYears);
+                }
+            }
+            return [BigInt(year), month, day];
+        }
+
+        // misc helper functions
+        toString() {
+            return `${this.getFullYear()}-${String(this.getMonth() + 1).padStart(2, '0')}-${String(this.getDate()).padStart(2, '0')} ${String(this.getHours()).padStart(2, '0')}:${String(this.getMinutes()).padStart(2, '0')}`;
+        };
+
+        toJSON() {
+            return {
+                year: this.year.toString(),
+                month: this.month,
+                day: this.day,
+                hour: this.hour,
+                minute: this.minute
+            };
+        }
+
+        static fromNativeDate(jsDate) {
+            return new EpochDate(
+                jsDate.getFullYear(),
+                jsDate.getMonth() + 1,
+                jsDate.getDate(),
+                jsDate.getHours(),
+                jsDate.getMinutes()
+            );
+        }
+    }
+
+    /**
+     * Creates a new story card and inserts it into storyCards. Thanks LewdLeah!
+     *
+     * @param {string} title - The card title.
+     * @param {string} entry - The card entry content.
+     * @param {string} type - The card type (e.g., "chronometer").
+     * @param {string} keys - Comma-separated trigger keywords.
+     * @param {string} description - The card's description/config block.
+     * @param {number} insertionIndex - Index to insert the card at (0 = top).
+     * @returns {object} A reference to the newly created or updated card.
+     */
+    const buildCard = (title = "", entry = "", type = "character", keys = title, description = "", insertionIndex = 0) => {
+        if (![type, title, keys, entry, description].every(arg => (typeof arg === "string"))) {
+            throw new Error("buildCard must be called with strings for title, entry, type, keys, and description");
+        } else if (!Number.isInteger(insertionIndex)) {
+            throw new Error("buildCard must be called with an integer for insertionIndex");
+        } else {
+            insertionIndex = Math.min(Math.max(0, insertionIndex), storyCards.length);
+        }
+        addStoryCard("%@%");
+        for (const [index, card] of storyCards.entries()) {
+            if (card.title !== "%@%") {
+                continue;
+            }
+            card.type = type;
+            card.title = title;
+            card.keys = keys;
+            card.entry = entry;
+            card.description = description;
+            if (index !== insertionIndex) {
+                // Remove from the current position and reinsert at the desired index
+                storyCards.splice(index, 1);
+                storyCards.splice(insertionIndex, 0, card);
+            }
+            return Object.seal(card);
+        }
+        throw new Error("An unexpected error occurred with buildCard");
+    };
+
+    /**
+     * Searches storyCards for cards matching a given predicate. Thanks LewdLeah!
+     *
+     * @param {function} predicate - A function that evaluates each card (c => c.title === "Epoch").
+     * @param {boolean} [getAll=false] - Whether to return all matches (true) or just the first (false).
+     * @returns {object|object[]|null} The matching card(s), or null if none found.
+     */
+    const getCard = (predicate, getAll = false) => {
+        if (typeof predicate !== "function") {
+            throw new Error(
+                "Invalid argument: \"" + predicate + "\" -> getCard must be called with a function"
+            );
+        } else if (typeof getAll !== "boolean") {
+            throw new Error(
+                "Invalid argument: \"" + predicate + ", " + getAll + "\" -> getCard requires a boolean as its second argument"
+            );
+        } else if (getAll) {
+            // Return an array of card references which satisfy the given condition
+            const collectedCards = [];
+            for (const card of storyCards) {
+                if (predicate(card)) {
+                    Object.seal(card);
+                    collectedCards.push(card);
+                }
+            }
+            return collectedCards;
+        }
+        // Return a reference to the first card which satisfies the given condition
+        for (const card of storyCards) {
+            if (predicate(card)) {
+                return Object.seal(card);
+            }
+        }
+        return null;
+    };
+
+    /**
+     * Scans a text string for an inline time header and parses it into a Date object.
+     *
+     * @param {string} entry - The string to scan (e.g., output text or card entry).
+     * @returns {EpochDate|null} A parsed EpochDate object if a time header is found, otherwise null.
+     */
+    const findDate = (entry) => {
+        for (const pattern of TIMESTAMP_PATTERNS) {
+            const match = entry.match(pattern);
+            if (match && match.groups) {
+                const {
+                    year,
+                    month,
+                    day,
+                    hour,
+                    minute
+                } = match.groups;
+                return new EpochDate(
+                    parseInt(year, 10),
+                    parseInt(month, 10),
+                    parseInt(day, 10),
+                    parseInt(hour, 10),
+                    parseInt(minute, 10)
+                );
+            }
+        }
+
+        return null;
+    };
+
+    const createEpochCard = () => {
+      let epochCard = getCard(c => c.title === epochCardTitle);
+      if (!epochCard) {
+        const description = [
+          `@timeIncrementMinutes:${timeIncrementMinutes}`,
+          `@instructionalText:${instructionalText}`,
+          `@eventInstruction:${eventInstruction}`,
+          `@includeEventInstruction:true`,
+          `@includeWeekday:true`,
+          ``,
+          `// Era can be a static label or a counter from a specific date.`,
+          `// lines with // are considered comments (disabled).`,
+          ``,
+          `// Events persist until the next entry (inclusive). Use a blank entry to clear the active era.`,
+          ``,
+          `// Static Era Label:`,
+          `//@eraName:War of the Lance`,
+          ``,
+          `// Relative Counter:`,
+          `//@eraEpoch:Z-Day`,
+          `//@eraStart:2025-01-01`,
+          `//@eraAdvance:daily`,
+          `// Supports: daily, weekly, monthly, or custom:<minutes>`,
+          ``,
+          `// Timeline-Based Events:`,
+          `//@eraTimeline:`,
+          `//#08:00 2025-09-01 - 15:00 2025-09-01: First Day of School`,
+          `//#10:00 2025-10-15 - 01:00 2025-10-18: Midterms`,
+          `//#10:00 2025-12-10 - 00:01 2025-12-16: Finals Week`,
+          `// (Events persist during fuzzy window +/- timeIncrementMinutes)`,
+          ``,
+          `// Include the day of the week in the timestamp (required for the rhythmSchedule)`,
+         `// Supports named days of the week, Weekday, Weekend, and Everyday.`,
+          `//@rhythmSchedule:`,
+          `//#Monday:`,
+          `//# 04:30 EXT. CALLE — wood-smoke drifts as bakers fire ovens`,
+          `//# 04:45 EXT. CANAL — Matins bell rolls; each toll fades into water`,
+          `//# 05:10-05:30 EXT. WATERWAY — gondoliers dip and pull in echoing cadence`,
+          `//#Tuesday:`,
+          `//# 09:45 INT. HALL — sharp double-bell cuts chatter; footsteps swell`,
+          `//# 09:50 INT. LIBRARY — doors click shut at 10; latecomers locked out until lunch`,
+          `//#Wednesday:`,
+          `//# 09:00 INT. OPS — station AI tones chime; drones begin sweep`,
+          `//# 11:15-11:45 EXT. DOCK — haulers spool engines; vibration climbs in the bulkheads`
+        ].join("\n");
+    
+        epochCard = buildCard(
+          epochCardTitle,
+          "",
+          "chronometer",
+          " ,.,epoch,time",
+          description
+        );
+      }
+      return epochCard;
+    };
+
+    /**
+     * Initializes the epoch system's internal state.
+     * If an Epoch card or stored time is not found, sets a default start time.
+     * This should be called once per session before time tracking begins.
+     */
+    const initializeTimeState = () => {
+        // Try to find an existing Epoch card
+        let epochCard = getCard(card => card.title === epochCardTitle);
+        let date = null;
+
+        // If the card has a parseable date, use it
+        if (epochCard) {
+            date = findDate(epochCard.entry);
+        }
+
+        // If no date found and state is empty, initialize default
+        if (!date && state.timeTracker == null) {
+            date = new Epoch.EpochDate(2025, 9, 1, 9, 30);
+            epochCard = createEpochCard();
+        }
+
+        // Store total minutes in state as string
+        if (date) {
+            state.timeTracker = {
+                time: date.getTime().toString()
+            };
+        }
+
+        return epochCard;
+    };
+
+    const advanceTurn = (text, epochCard) => {
+        // First, check if autocards or another script is active and exit now
+        // match >>> <<< of auto-cards and << >> of Story Arc Engine
+        const scriptMarkerRegex = /^\s*(?:>{2,}.*?<{2,}|<{2,}.*?>{2,})\s*$/;
+        if (text.split("\n").some(line => scriptMarkerRegex.test(line))) {
+            return text;
+        }
+
+        const dateFromText = Epoch.findDate(text);
+        let date;
+        if (dateFromText) {
+            // Manual skip by AI output
+            date = dateFromText;
+            for (const pattern of TIMESTAMP_PATTERNS) {
+                text = text.replace(pattern, "");
+            }
+        } else if (state.timeTracker?.time !== undefined) {
+            // Advance from stored time
+            const totalMin = BigInt(state.timeTracker.time);
+            const nextMin = totalMin + BigInt(Epoch.getTimeIncrementMinutes());
+            date = Epoch.EpochDate.fromTotalMinutes(nextMin);
+            state.timeTracker.time = nextMin.toString();
+        }
+
+        if (date) {
+            // Normalize to EpochDate
+            const dt = date instanceof Epoch.EpochDate ?
+                date :
+                Epoch.EpochDate.fromNativeDate(date);
+
+            const totalMin = dt.getTime().toString();
+            state.timeTracker.time = totalMin;
+
+            Epoch.updateEpochCard(epochCard);
+        }
+
+        return text;
+    };
+
+    /**
+     * Parses the Epoch card's description block for @key:value configuration pairs.
+     * Supports numerical and string values.
+     *
+     * @returns {Object} A config object with parsed keys (e.g., timeIncrementMinutes, instructionalText).
+     */
+    const getEpochConfig = () => {
+        const card = getCard(c => c.title === epochCardTitle);
+        if (!card) {
+            console.log("No epoch card found.");
+            return {};
+        }
+
+        const config = {};
+        const lines = card.description.split(/\r?\n/);
+        // Keys that can span multiple lines
+        const multilineKeys = ['instructionalText', 'eventInstruction', 'eraTimeline', 'rhythmSchedule'];
+        let currentKey = null;
+        let currentVal = [];
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+
+            // Explicitly ignore comment lines entirely.
+            if (trimmed.startsWith('//')) {
+                continue;
+            }
+
+            // Match @key:value — reset accumulation
+            const match = trimmed.match(/^@(\w+):\s*(.*)$/);
+            if (match) {
+                if (currentKey) {
+                    config[currentKey] = currentVal.join("\n").trim();
+                }
+                currentKey = match[1];
+                currentVal = [match[2]];
+                continue;
+            }
+
+            // Only allow multiline continuation for specific keys.
+            if (currentKey && multilineKeys.includes(currentKey) && (trimmed.startsWith("#") || trimmed === "")) {
+                currentVal.push(trimmed);
+            }
+        }
+
+        // Capture final block
+        if (currentKey) {
+            config[currentKey] = currentVal.join("\n").trim();
+        }
+
+        return config;
+    };
+
+    const getRhythmSchedule = (config = {}) => {
+      const schedule = {};
+      if (!config.rhythmSchedule) return schedule;
+    
+      const lines = config.rhythmSchedule
+        .split(/\r?\n/)
+        .map(line => normalizeLine(line))
+        .filter(line => line.startsWith('#')); // keep only schedule-ish lines
+    
+      // Accept normal weekdays + special groups
+      const dayHeader = /^#(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Everyday|Weekday|Weekend):$/i;
+    
+      let currentDay = null;
+    
+      for (const line of lines) {
+        if (!line) continue;
+    
+        const dayMatch = line.match(dayHeader);
+        if (dayMatch) {
+          currentDay = dayMatch[1][0].toUpperCase() + dayMatch[1].slice(1).toLowerCase(); // Normalize casing
+          schedule[currentDay] = schedule[currentDay] || [];
+          continue;
+        }
+    
+        if (!currentDay) continue; // skip until a header
+    
+        // Ranges: "# 08:00 - 09:00 Label"
+        const rangeMatch = line.match(/^#\s*(\d{2})[:：](\d{2})\s*-\s*(\d{2})[:：](\d{2})\s+(.+)$/);
+        // Points:  "# 08:00 Label"
+        const pointMatch = line.match(/^#\s*(\d{2})[:：](\d{2})\s+(.+)$/);
+    
+        if (rangeMatch) {
+          const [, sh, sm, eh, em, label] = rangeMatch;
+          if (label.trim()) {
+            schedule[currentDay].push({
+              start: new EpochDate(0, 0, 0, parseInt(sh), parseInt(sm)),
+              end:   new EpochDate(0, 0, 0, parseInt(eh), parseInt(em)),
+              label: label.trim()
+            });
+          }
+          continue;
+        }
+    
+        if (pointMatch) {
+          const [, h, m, label] = pointMatch;
+          if (label.trim()) {
+            schedule[currentDay].push({
+              time:  new EpochDate(0, 0, 0, parseInt(h), parseInt(m)),
+              label: label.trim()
+            });
+          }
+        }
+      }
+    
+      // Merge special groups into real weekdays
+      const WEEKDAYS  = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+      const WEEKENDS  = ["Saturday","Sunday"];
+    
+      const mergeInto = (fromKey, intoKeys) => {
+        if (!schedule[fromKey]) return;
+        for (const k of intoKeys) {
+          schedule[k] = (schedule[k] || []).concat(schedule[fromKey]);
+        }
+      };
+    
+      mergeInto("Everyday", dayNames);
+      mergeInto("Weekday",  WEEKDAYS);
+      mergeInto("Weekend",  WEEKENDS);
+    
+      // Ensure all days exist (empty arrays) for downstream code
+      for (const d of dayNames) schedule[d] = schedule[d] || [];
+    
+      return schedule;
+    };
+
+    const getEraSuffix = (date, config = {}) => {
+        if (config.eraEpoch && config.eraStart) {
+            // parse YYYY-MM-DD
+            const [y, m, d] = config.eraStart.split("-").map(Number);
+            const start = new EpochDate(y, m, d);
+            const diffMin = date.diffInMinutes(start);
+            const advance = (config.eraAdvance || "").toLowerCase();
+
+            if (advance === "hourly") {
+                return `| ${config.eraEpoch} +${(diffMin / MIN_PER_HOUR)}h`;
+            }
+
+            if (advance === "weekly") {
+                return `| ${config.eraEpoch} +${(diffMin / MIN_PER_WEEK)}w`;
+            }
+
+            if (advance === "monthly") {
+                const monthsPassed =
+                    (date.getFullYear() - start.getFullYear()) * 12 +
+                    (date.getMonth() - start.getMonth());
+                return `| ${config.eraEpoch} +${monthsPassed}mo`;
+            }
+
+            if (advance.startsWith("custom:")) {
+                const customMin = parseInt(advance.split(":")[1], 10);
+                if (!isNaN(customMin) && customMin > 0) {
+                    const timeSpan = BigInt(customMin);
+                    return `| ${config.eraEpoch} +${(diffMin / timeSpan)}`;
+                }
+            }
+
+            // Default = daily
+            return `| ${config.eraEpoch} +${(diffMin / MIN_PER_DAY)}d`;
+        }
+
+        if (config.eraName) return `| ${config.eraName}`;
+        return "";
+    };
+
+    const getActiveEvents = (date, config = {}) => {
+        const increment = parseInt(config.timeIncrementMinutes) || timeIncrementMinutes;
+        const bufferMin = BigInt(increment);
+        const labels = [];
+
+        // Rhythm schedule (time-of-day only)
+        const rhythm = getRhythmSchedule(config);
+        const weekday = dayNames[date.getDay()];
+        const events = rhythm[weekday];
+
+        if (events && config.includeWeekday?.toLowerCase() === "true") {
+            const curOfDay = BigInt(date.getHours() * 60 + date.getMinutes());
+
+            for (const entry of events) {
+                if (entry.time instanceof EpochDate) {
+                    const evtOfDay = BigInt(entry.time.getHours() * 60 + entry.time.getMinutes());
+                    const diff = curOfDay - evtOfDay;
+                    if (diff >= -bufferMin && diff <= bufferMin) {
+                        labels.push(entry.label);
+                    }
+                } else if (entry.start instanceof EpochDate && entry.end instanceof EpochDate) {
+                    const startOfDay = BigInt(entry.start.getHours() * 60 + entry.start.getMinutes());
+                    const endOfDay = BigInt(entry.end.getHours() * 60 + entry.end.getMinutes());
+                    if (curOfDay >= startOfDay - bufferMin && curOfDay <= endOfDay + bufferMin) {
+                        labels.push(entry.label);
+                    }
+                }
+            }
+        }
+
+        // Timeline events (full date comparisons)
+        if (config.eraTimeline) {
+            const lines = config.eraTimeline
+                .split(/\r?\n/)
+                .map(normalizeLine)
+                .filter(l => l.startsWith("#"));
+
+            for (const line of lines) {
+                let match = line.match(/^#\s?(\d{2}):(\d{2}) (-?\d{1,16})-(\d{2})-(\d{2})\s*-\s*(\d{2}):(\d{2}) (-?\d{1,16})-(\d{2})-(\d{2}):\s*(.+)$/);
+                if (match) {
+                    const [, h1, m1, y1, mo1, d1, h2, m2, y2, mo2, d2, label] = match;
+                    const start = new EpochDate(y1, mo1, d1, h1, m1);
+                    const end = new EpochDate(y2, mo2, d2, h2, m2);
+                    const diffStart = date.diffInMinutes(start);
+                    const diffEnd = date.diffInMinutes(end);
+                    if (diffStart >= -bufferMin && diffEnd <= bufferMin) {
+                        labels.push(label.trim());
+                    }
+                    continue;
+                }
+
+                match = line.match(/^#\s?(\d{2}):(\d{2}) (-?\d{1,16})-(\d{2})-(\d{2}):\s*(.+)$/);
+                if (match) {
+                    const [, hour, min, year, month, day, label] = match;
+                    const dt = new EpochDate(year, month, day, hour, min);
+                    const diff = date.diffInMinutes(dt);
+                    if (diff >= -bufferMin && diff <= bufferMin) {
+                        labels.push(label.trim());
+                    }
+                }
+            }
+        }
+
+        return labels;
+    };
+
+    const formatTime = (dateObj) => {
+      const hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes();
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth() + 1;
+      const day = dateObj.getDate();
+    
+      const config = getEpochConfig();
+      if (!config) return "";
+    
+      const fmt = (n) => n.toString().padStart(2, "0");
+      const era = getEraSuffix(dateObj, config).trim();
+    
+      const includeWeekday = config.includeWeekday?.toLowerCase() === "true";
+      const dayName = includeWeekday ? `${dayNames[dateObj.getDay()]} ` : "";
+
+      const includeEventInstruction = config.includeEventInstruction?.toLowerCase() === "true";
+
+      const events = getActiveEvents(dateObj, config);
+
+      let eventInstructionText = "";
+      if (includeEventInstruction) {
+        eventInstructionText = (config.eventInstruction || eventInstruction).trim();
+      }
+
+      const timeLine = `[ time: ${dayName}${fmt(hours)}:${fmt(minutes)} ${year}-${fmt(month)}-${fmt(day)}${era ? " " + era : ""} ]`;
+      const eventLine = events.length ? `[ event: ${events.join("; ")} ]` : "";
+  
+      /* Order: instruction (if any)
+                event (if any)
+                time (always)
+      */
+      return [
+        eventInstructionText && events.length ? eventInstructionText : "",
+        eventLine,
+        timeLine
+      ].filter(Boolean).join("\n");
+    };
+
+    /**
+     * Updates or creates the Epoch card with the current time and instructions.
+     * Reads configuration from the card description, and writes the timestamp and
+     * user-defined instructions into the card's entry.
+     */
+    const updateEpochCard = () => {
+        const epochCard = createEpochCard();
+
+        if (!state.timeTracker) return;
+
+        const config = getEpochConfig();
+        const instruction = config.instructionalText || instructionalText;
+
+        const current = EpochDate.fromTotalMinutes(state.timeTracker.time);
+        const dateStr = formatTime(current);
+        epochCard.entry = dateStr + '\n' + instruction;
+    };
+
+    /**
+     * Returns the configured time increment (in minutes) for each turn.
+     * Falls back to the default if not set or invalid.
+     *
+     * @returns {number} The time increment to apply each turn.
+     */
+    const getTimeIncrementMinutes = () => {
+        const epochCard = getEpochConfig();
+        const raw = epochCard.timeIncrementMinutes;
+        const val = parseInt(raw);
+
+        // must increment between 1 min and 1 year
+        if (!isNaN(val) && val > 0 && val <= 525600) {
+            return val;
+        }
+
+        return timeIncrementMinutes;
+    };
+
+    return {
+        initializeTimeState,
+        formatTime,
+        findDate,
+        updateEpochCard,
+        getTimeIncrementMinutes,
+        EpochDate,
+        advanceTurn
+    };
+})();
