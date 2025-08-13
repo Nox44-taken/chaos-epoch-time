@@ -250,6 +250,7 @@ state.heatlogs = heatlogs;
 
  // === Reputation Tracking ===
 
+ 
   const worldDelta = state.lastWorldReputationChange || {};
   const personalDelta = state.lastPersonalReputationChange || {};
   const rep = state.reputation || {};
