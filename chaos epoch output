@@ -249,25 +249,29 @@ state.heatlogs = heatlogs;
    storeCurrToSC();
 
  // === Reputation Tracking ===
+
   const worldDelta = state.lastWorldReputationChange || {};
   const personalDelta = state.lastPersonalReputationChange || {};
   const rep = state.reputation || {};
   let changes = [];
 
-  // Check for changes
+  // --- Reputation Change Displays
   const worldChanged = Object.keys(worldDelta).length > 0;
   const personalChanged = Object.keys(personalDelta).length > 0;
 
-  // === World Reputation Changes ===
+  if (typeof output !== "undefined") output.push("[DEBUG] worldDelta: " + JSON.stringify(worldDelta));
+  if (typeof output !== "undefined") output.push("[DEBUG] personalDelta: " + JSON.stringify(personalDelta));
+  if (typeof output !== "undefined") output.push("[DEBUG] reputation: " + JSON.stringify(rep));
+
   if (worldChanged) {
     const worldChanges = Object.entries(worldDelta)
       .map(([faction, delta]) => `${faction} ${delta >= 0 ? "+" : ""}${delta}`)
       .join("  ");
     changes.push(`[World Reputation Change] ${worldChanges}`);
     changes.push(`[World Reputation] ${getReputationSummary(state)}`);
+    if (typeof output !== "undefined") output.push("[DEBUG] Pushed world rep changes.");
   }
 
-  // === Personal Reputation Changes ===
   if (personalChanged) {
     const personalChanges = Object.entries(personalDelta)
       .map(([cat, delta]) => `${cat} ${delta >= 0 ? "+" : ""}${delta}`)
