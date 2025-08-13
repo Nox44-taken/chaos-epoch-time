@@ -13483,11 +13483,11 @@ const Epoch = (() => {
     const MIN_PER_MONTH = 43800n;
     const MIN_PER_YEAR = 525600n;
     const TIMESTAMP_PATTERNS = [
-        // Normal: HH:MM YYYY-MM-DD (e.g. 13:22 2025-09-01)
-        /\b(?<hour>\d{2}):(?<minute>\d{2})(?::\d{2})?\s+(?<year>-?\d{1,16})-(?<month>\d{2})-(?<day>\d{2})\b/,
-
         // Reversed: YYYY-MM-DD HH:MM (e.g. 2025-09-01 13:22)
-        /\b(?<year>-?\d{1,16})-(?<month>\d{2})-(?<day>\d{2})\s+(?<hour>\d{2}):(?<minute>\d{2})(?::\d{2})?\b/
+        /\b(?<year>-?\d{1,16})-(?<month>\d{2})-(?<day>\d{2})\s+(?<hour>\d{2}):(?<minute>\d{2})(?::\d{2})?\b/,
+        
+        // Normal: HH:MM YYYY-MM-DD (e.g. 13:22 2025-09-01)
+        /\b(?<hour>\d{2}):(?<minute>\d{2})(?::\d{2})?\s+(?<year>-?\d{1,16})-(?<month>\d{2})-(?<day>\d{2})\b/
     ];
 
     const normalizeLine = (line) => {
@@ -14130,11 +14130,12 @@ const Epoch = (() => {
     };
 
     const formatTime = (dateObj) => {
-      const hours = dateObj.getHours();
-      const minutes = dateObj.getMinutes();
+      
       const year = dateObj.getFullYear();
       const month = dateObj.getMonth() + 1;
       const day = dateObj.getDate();
+      const hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes();
     
       const config = getEpochConfig();
       if (!config) return "";
@@ -14154,7 +14155,8 @@ const Epoch = (() => {
         eventInstructionText = (config.eventInstruction || eventInstruction).trim();
       }
 
-      const timeLine = `[ time: ${dayName}${fmt(hours)}:${fmt(minutes)} ${year}-${fmt(month)}-${fmt(day)}${era ? " " + era : ""} ]`;
+        const timeLine = `[ time: ${era ? era + " " : ""}${year}-${fmt(month)}-${fmt(day)} ${dayName} ${fmt(hours)}:${fmt(minutes)} ]`;
+
       const eventLine = events.length ? `[ event: ${events.join("; ")} ]` : "";
   
       /* Order: instruction (if any)
