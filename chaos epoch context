@@ -1,1 +1,42 @@
+// Your "Context" tab should look like this
+const modifier = (text) => {
+  // First process AutoCards
+  [text, stop] = AutoCards("context", text, stop);
+  text = onContext_TAS(text);
+  text = onContext_SAE(text);
 
+  // Initialize reputation systems
+  initWorldReputation(state);
+  initPersonalReputation(state);
+
+  // Get reputation summaries
+  const worldSummary = getReputationSummary(state);
+  const personal = state.reputation || {};
+  const personalSummary = ` Charmer:${personal.Charmer || 0} Honorable:${personal.Honorable || 0} Rogue:${personal.Rogue || 0} Dominant:${personal.Dominant || 0} Submissive:${personal.Submissive || 0} Prankster:${personal.Prankster || 0} Curious:${personal.Curious || 0} Innocent:${personal.Innocent || 0} Mischievous:${personal.Mischievous || 0} Affectionate:${personal.Affectionate || 0} Defiant:${personal.Defiant || 0} Brave:${personal.Brave || 0} Clever:${personal.Clever || 0} Playful:${personal.Playful || 0}`;
+
+  const instructions = `
+You are the narrator and game master.
+Write in second-person present tense.
+Use the reputation summaries below to influence how the world and characters react.
+Do not state numeric values directly unless contextually justified.
+Use world reputation to shape political, factional, or widespread responses.
+Use personal reputation to flavor interpersonal relationships and tone.
+Always show, don't tell; infer reputation reactions through narrative.
+`.trim();
+
+  // Build final context
+  const contextText = [
+    instructions,
+    `[World Reputation Summary] ${worldSummary}`,
+    `[Personal Reputation Summary] ${personalSummary}`,
+    text
+  ].join("\n\n");
+
+  return {
+    text: contextText,
+    stop: stop
+  };
+};
+
+// Don't modify this part
+modifier(text);
