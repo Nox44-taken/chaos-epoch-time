@@ -1,1 +1,3 @@
+ const card = Epoch.initializeTimeState();
+    text = Epoch.advanceTurn(text, state, card);
 
