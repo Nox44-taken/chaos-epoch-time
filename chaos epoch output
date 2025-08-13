@@ -1,3 +1,465 @@
- const card = Epoch.initializeTimeState();
-    text = Epoch.advanceTurn(text, state, card);
+// Your "Output" tab should look like this
+//The percentage of turns an event will fire.
+let percentChance = 10
 
+  //List of possible events
+  state.options = {
+    npc:[
+      `Suddenly you see the corpse of a ${getGender()} ${getRace()} ${getClass()} lying on the ground. Should you loot it for equipment?`,
+      `You see a ${getGender()} ${getRace()} ${getClass()} walking down the hall towards you.`,
+      `You stumble across a ${getGender()} ${getRace()} ${getClass()} who seems very lost.`,
+      `Suddenly a secret door opens and a ${getGender()} ${getRace()} ${getClass()} steps out of it.`,
+      `You spot a strange altar at the end of the hall. As you approach, you notice a ${getGender()} ${getRace()} ${getClass()} standing there holding ${getMiscItem()}.`,
+      `"Greetings, adventurer," says a ${getGender()} ${getRace()} ${getClass()}, stepping out from the shadows. "I seek a ${getRandomItem()}. There is one nearby, but it is hidden in a dangerous ${getMonAdj()} ${getMonType()} lair. If you retrieve it for me, you will be richly rewarded."`,
+      `Entering the next room, you startle a ${getGender()} ${getRace()} ${getClass()}, who drops ${getMiscItem()} and runs away.`,
+      `Entering the next room, you find a ${getGender()} ${getRace()} ${getClass()} chained to the wall.`,
+      `Suddenly a ${getGender()} ${getRace()} ${getClass()} comes running down the hallway towards you, chased by a ${getMonAdj()} ${getMonType()}.`,
+      `The sounds of battle reach your ears, and you find a ${getGender()} ${getRace()} ${getClass()} fighting a ${getMonAdj()} ${getMonType()} up ahead.`,
+      `A noise catches your attention, and you turn to see a ${getGender()} ${getRace()} ${getClass()} opening a nearby treasure chest.`,
+      `You spot a ${getGender()} ${getRace()} ${getClass()} resting in a secluded alcove. "Oh good, a hero," the person says with a sigh of relief. "A ${getMonAdj()} ${getMonType()} just beat me up and stole my ${getRandomItem()}. Can you help me get it back?"`,
+      `You jump as the ghost of a ${getGender()} ${getRace()} ${getClass()} floats through a nearby wall. This must be one of the unlucky adventurers whose life was claimed by the dungeon.`,
+      `You notice something moving off in the distance and decide to investigate. As you get closer, you realize it's a ${getGender()} ${getRace()} ${getClass()} dressed in a ${getClothingColor()} ${getFabric()} ${getGarment()}.`,
+      `Off in the distance, you see a ${getGender()} ${getRace()} ${getClass()} struggling to open a locked door.`,
+      `You spot a male ${getRace()} ${getClass()} across the room. He appears to be wearing a ${getMetal()} and ${getGem()} ${getJewelry()}.`,
+      `You spot a female ${getRace()} ${getClass()} across the room. She appears to be wearing a ${getMetal()} and ${getGem()} ${getJewelry()}.`,
+      `Hearing footsteps nearby, you ready your weapon, but relax a moment later when the source of the noise walks into view. Whew, it's only a ${getGender()} ${getRace()} ${getClass()}!`
+    ],
+    monster:[
+      `You see a ${getMonAdj()} ${getMonType()} step out from around a corner in front of you.`,
+      `You hear a noise behind you and turn around. Oh no, it's a ${getMonAdj()} ${getMonType()}!`,
+      `You see a ${getMonAdj()} ${getMonType()} lying on the floor. It appears to be dead.`,
+      `You hear the cries of a ${getMonAdj()} ${getMonType()} in the distance.`,
+      `You find a ${getMonAdj()} ${getMonType()} dressed in an ill-fitting ${getClothingColor()} ${getFabric()} ${getGarment()} rooting through some trash.`,
+      `You see a treasure chest in the next room. Unfortunately, it seems to be guarded by a ${getMonAdj()} ${getMonType()}.`,
+      `Hearing a forlorn cry, you decide to investigate. Entering the next room, you find a ${getMonAdj()} ${getMonType()} locked in a cage.`,
+      `As you're wandering through the dungeon, you stumble upon a ${getMonAdj()} ${getMonType()}. It immediately shrieks and runs away.`,
+      `You spot a sign hanging on the wall. It says "WARNING: Beware of the ${getMonAdj()} ${getMonType()}!"`,
+      `Peering through the darkness, you spot a ${getMonAdj()} ${getMonType()} skulking around.`,
+      `You spot a ${getMonAdj()} ${getMonType()} off in the distance and ready your weapon. However, as soon as it sees you, it drops a ${getMetal()} and ${getGem()} ${getJewelry()} on the floor and runs away.`,
+      `You spot a ${getMonAdj()} ${getMonType()} off in the distance and ready your weapon. However, as soon as it sees you, it drops ${getMiscItem()} on the floor and runs away.`,
+      `Suddenly, you stop short and stare ahead of you in dismay. You seem to have wandered into a ${getMonAdj()} ${getMonType()} den.`,
+      `You wrinkle your nose as you get a whiff of a strange smell. You'd bet anything there's a ${getMonAdj()} ${getMonType()} around here somewhere.`,
+      `Suddenly you see a ${getMonAdj()} ${getMonType()} up ahead. It doesn't seem to have noticed you yet.`,
+      `You hear a shriek behind you and whirl around to discover a ${getMonAdj()} ${getMonType()} has triggered a ${getTrap()} trap!`,
+      `You see a treasure chest in front of you. You're just bending down to open it when it opens its lid and tries to bite you!`
+    ],
+    loot:[
+      `${getLootPlace()} a small ${getWood()} figurine of a ${getGender()} ${getRace()}`,
+      `${getLootPlace()} ${getMiscItem()}.`,
+      `${getLootPlace()} a ${getMetal()} ${getMetalItem()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getMetal()} ${getMetalItem()}.`,
+      `${getLootPlace()} a ${getMetal()} ${getMetalItem()} of ${getItemMod()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getMetal()} ${getMetalItem()} of ${getItemMod()}.`,
+      `${getLootPlace()} a ${getMetal()} ${getMetalItem()} of ${getElement()}.`,
+      `${getLootPlace()} a ${getMetal()} ${getMetalItem()} of protection from ${getElement()}.`,
+      `${getLootPlace()} a ${getMetal()} ${getMetalItem()} of ${getSpell()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getMetal()} ${getMetalItem()} of ${getElement()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getMetal()} ${getMetalItem()} of protection from ${getElement()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getMetal()} ${getMetalItem()} of ${getSpell()}.`,
+      `${getLootPlace()} a ${getLeather()} ${getLeatherItem()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getLeather()} ${getLeatherItem()}.`,
+      `${getLootPlace()} a ${getLeather()} ${getLeatherItem()} of ${getItemMod()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getLeather()} ${getLeatherItem()} of ${getItemMod()}.`,
+      `${getLootPlace()} a ${getLeather()} ${getLeatherItem()} of ${getElement()}.`,
+      `${getLootPlace()} a ${getLeather()} ${getLeatherItem()} of protection from ${getElement()}.`,
+      `${getLootPlace()} a ${getLeather()} ${getLeatherItem()} of ${getSpell()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getLeather()} ${getLeatherItem()} of ${getElement()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getLeather()} ${getLeatherItem()} of protection from ${getElement()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getLeather()} ${getLeatherItem()} of ${getSpell()}.`,
+      `${getLootPlace()} a ${getWood()} ${getWoodItem()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getWood()} ${getWoodItem()}.`,
+      `${getLootPlace()} a ${getWood()} ${getWoodItem()} of ${getItemMod()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getWood()} ${getWoodItem()} of ${getItemMod()}.`,
+      `${getLootPlace()} a ${getWood()} ${getWoodItem()} of ${getElement()}.`,
+      `${getLootPlace()} a ${getWood()} ${getWoodItem()} of protection from ${getElement()}.`,
+      `${getLootPlace()} a ${getWood()} ${getWoodItem()} of ${getSpell()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getWood()} ${getWoodItem()} of ${getElement()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getWood()} ${getWoodItem()} of protection from ${getElement()}.`,
+      `${getLootPlace()} a ${getItemAdj()} ${getWood()} ${getWoodItem()} of ${getSpell()}.`,
+      `${getLootPlace()} a ${getMagicItem()} of ${getSpell()}.`,
+      `${getLootPlace()} a ${getClothingColor()} orb. It seems to have power over the element of ${getElement()}.`,
+      `${getLootPlace()} a ${getClothingColor()} orb of ${getSpell()}.`,
+      `${getLootPlace()} a ${getMetal()} and ${getGem()} ${getJewelry()}.`,
+      `${getLootPlace()} a ${getLeather()} quiver full of ${getWood()} arrows.`,
+      `${getLootPlace()} a ${getClothingColor()} ${getFabric()} ${getGarment()}.`,
+      `${getLootPlace()} a ${getMetal()} key. You wonder what it opens.`
+    ],
+    trap:[
+      `You feel something shift beneath your feet and your stomach clenches with dread. It's a ${getTrap()} trap!`,
+      `Oops! You trip and fall, triggering a ${getTrap()} trap.`,
+      `You stop abruptly as you realize there's a tripwire in front of you. It seems to be attached to a ${getTrap()} trap.`,
+      `You pause to lean against the wall, only to regret it a moment later when you hear a ${getTrap()} trap go off.`,
+      `You hear an ominous click. Oh no, you've triggered a ${getTrap()} trap!`,
+      `As you brush your hand along the wall, you hear an ominous click and realize with horror that you've triggered a ${getTrap()} trap.`
+    ],
+    desc:[
+      `A strange painting depicting ${getMiscItem()} hangs on the wall before you.`,
+      `You see a treasure chest in the next room.`,
+      `You notice a piece of paper on the floor. It seems to be a note.`,
+      `You hear an eerie noise in the distance.`,
+      `You hear a scream echoing eerily through the shadowy corridors.`,
+      `The torchlight flickers eerily on the stone walls.`,
+      `You hear footsteps echoing eerily along the ancient corridors. Someone -- or something -- must be nearby.`,
+      `Your movements kick up a cloud of ancient dust, and you sneeze.`,
+      `The stones of the floor are cracked and worn, as if many feet have passed here.`,
+      `You hear water dripping somewhere in the distance.`,
+      `Something golden gleams at the edge of the torchlight.`,
+      `You notice a strange sigil on the wall in front of you. Could there be a secret door here?`,
+      `There's a lever on the wall in front of you. You wonder if it opens a secret door...or triggers a trap.`,
+      `You hear a rumbling noise and the wall in front of you slides open. It's a secret door!`,
+      `Suddenly the floor ahead of you opens up and you nearly plummet into the shadows below.`,
+      `You see a mysterious ${getClothingColor()} button on the wall in front of you.`,
+      `A stone in the wall seems to be loose.`,
+      `You spot a hole in the wall just big enough to put your hand in.`,
+      `You see an alcove with a ladder going up.`,
+      `The torchlight flickers, revealing a ladder going down.`,
+      `You notice a trapdoor set into the floor.`,
+      `You notice a trapdoor set into the ceiling.`,
+      `In the corner of the room, you spot some stairs going up.`,
+      `Behind a glowing ${getClothingColor()} magical barrier, you catch a glimpse of some stairs going down.`,
+      `Behind a glowing ${getClothingColor()} magical barrier, you catch a glimpse of some stairs going up.`,
+      `In the distance, you spot some stairs going down. Unfortunately, they seem to be guarded by a ${getMonAdj()} ${getMonType()}.`,
+      `In the distance, you spot some stairs going up. Unfortunately, they seem to be guarded by a ${getMonAdj()} ${getMonType()}.`,
+      `You spot a wooden door in the wall. It seems to be locked.`,
+      `You spot an iron door in the wall. It seems to be locked.`,
+      `In an out-of-the-way corner of the room, you spot a gem-encrusted golden door. It must have something really good behind it!`,
+      `You notice an old wooden door with rusted chains across it.`,
+      `Off in the distance, you notice a wooden door reinforced by metal bands. You wonder what could be in there.`,
+      `A tapestry depicting a ${getGender()} ${getRace()} ${getClass()} fighting a ${getMonAdj()} ${getMonType()} hangs on the wall before you.`,
+      `Farther ahead, you spot a statue of a ${getGender()} ${getRace()} ${getClass()}.`,
+      `In the center of the room, you spot a gigantic glowing ${getGem()}.`,
+      `A ${getGem()}-encrusted ${getWood()} treasure chest sits in an out-of-the-way corner of the room.`
+  ]
+}
+
+//Chooses a random event from state.option
+function pickEventText() {
+  let min = 1;
+  let max = 100;
+  let random = Math.floor(Math.random()*(max-min+1))+min;
+//Weights for different event types.
+  if(random<=20){
+    return state.options.npc[Math.floor(Math.random()*state.options.npc.length)]
+  }
+  else if(random>=21 && random<=45){
+    return state.options.monster[Math.floor(Math.random()*state.options.monster.length)]
+  }
+  else if(random>=46 && random<=65){
+    return state.options.loot[Math.floor(Math.random()*state.options.loot.length)]
+  }
+  else if(random>=66 && random<=80){
+    return state.options.trap[Math.floor(Math.random()*state.options.trap.length)]
+  }
+  else{
+    return state.options.desc[Math.floor(Math.random()*state.options.desc.length)]
+  }
+}
+
+//DO NOT CHANGE ANYTHING HERE (Exept the conflict & calming word strings if you want to make them better)
+
+const conflictWords = ["attack", "stab", "destroy", "break", "steal", "ruin", "burn", "smash", "sabotage", "disrupt", "vandalize", "overthrow", "assassinate", "plunder", "rob", "ransack", "raid", "hijack", "detonate", "explode", "ignite", "collapse", "demolish", "shatter", "strike", "slap", "obliterate", "annihilate", "corrupt", "infect", "poison", "curse", "hex", "summon", "conjure", "mutate", "provoke", "riot", "revolt", "mutiny", "rebel", "resist", "intimidate", "blackmail", "manipulate", "brainwash", "lie", "cheat", "swindle", "disarm", "fire", "hack", "overload", "flood", "drown", "rot", "dissolve", "slaughter", "terminate", "execute", "drama", "conflict", "evil", "kill", "slay", "defeat", "fight", "doom", "slice", "pain", "dying", "die", "perish", "blood"]
+
+const calmingWords = ["calm", "rest", "relax", "meditate", "sleep", "comfort", "hug", "smile", "forgive", "mend", "repair", "plant", "sing", "dance", "celebrate", "collaborate", "share", "give", "donate", "protect", "shelter", "trust", "hope", "dream", "revive", "eat", "drink", "balance", "cheer", "laugh", "play", "build", "bake", "craft", "cook", "empathize", "apologize", "befriend", "admire", "sympathize", "thank", "appreciate", "cherish", "love", "pet", "respect", "restore", "guide", "teach", "learn", "daydream", "wander", "explore", "discover", "reflect", "happy", "joy", "kind"]
+
+retrieveCurrFromSC();
+const modifier = (text) => {
+  // First process AutoCards
+
+  const card = Epoch.initializeTimeState();
+    text = Epoch.advanceTurn(text, state, card);
+    
+  text = AutoCards("output", text);
+  text = onOutput_TAS(text);
+  text = onOutput_SAE(text);
+
+
+  //Pick a number between 0 - 99
+  let num = Math.floor(Math.random() * 100);
+  //DEBUG. Uncomment to display the number that was chosen each turn.
+  //state.message = num
+
+  //If the number is below the percentage (but not equal to, to account for 0), fire the event.
+  if(num < percentChance) {
+    let tText = pickEventText();
+    modifiedText = text + '\n\n' + tText + '\n\n';
+  }
+
+  const lowerText = text.toLowerCase()
+  const words = lowerText.split(/\s+/)
+  let conflictCount = 0
+  let calmingCount = 0
+
+  words.forEach(word => {
+    const fixedWord = word.replace(/^[^\w]+|[^\w]+$/g, '')
+    if (conflictWords.includes(fixedWord)) {
+      conflictCount++
+    }
+    if (calmingWords.includes(fixedWord)) {
+      calmingCount++
+    }
+  })
+
+  if (conflictCount > 0) {
+    state.heat += conflictCount * state.modelIncreaseHeatImpact
+    if (conflictCount >= state.threshholdModelIncreaseTemperature){
+       state.storyTemperature += state.modelIncreaseTemperatureImpact
+       log(`Detected ${conflictCount} conflict words (AI). Increasing heat & temperature.`)
+    }
+    else{
+      log(`Detected ${conflictCount} conflict words (AI). Increasing heat.`)
+    }
+  }
+  
+  if (calmingCount > 0) {
+    state.heat -= calmingCount * state.modelDecreaseHeatImpact
+    if (calmingCount >= state.threshholdModelDecreaseTemperature){
+       state.storyTemperature -= state.modelDecreaseTemperatureImpact
+       log(`Detected ${calmingCount} calming words (AI). Decreasing heat & temperature.`)
+    }
+    else{
+      log(`Detected ${calmingCount} calming words (AI). Decreasing heat.`)
+    }
+  }
+
+  if (state.storyTemperature > state.trueMaximumTemperature){
+    state.storyTemperature = state.trueMaximumTemperature
+    log("Temperature over maximum, recalibrating...")
+  }
+
+  if (state.storyTemperature <= 0){
+    state.storyTemperature = 1
+    log("Temperature under minimum, recalibrating...")
+  }
+
+
+  if (state.memory.authorsNote == state.originalAuthorsNote){
+    state.memory.authorsNote = state.authorsNoteStorage
+  }
+
+  log("Heat: " + state.heat)
+  log("Temperature: " + state.storyTemperature)
+
+  const heatlogs = (conflictCount > 0 ? 
+  `Detected ${conflictCount} conflict words (AI). Increasing heat & temperature.\nDetected ${conflictCount} conflict words (AI). Increasing heat.\n` 
+  : '') +
+  (calmingCount > 0 ? 
+  `Detected ${calmingCount} calming words (AI). Decreasing heat & temperature.\nDetected ${calmingCount} calming words (AI). Decreasing heat.\n`
+  : '');
+state.heatlogs = heatlogs;
+   storeCurrToSC();
+
+ // === Reputation Tracking ===
+  const worldDelta = state.lastWorldReputationChange || {};
+  const personalDelta = state.lastPersonalReputationChange || {};
+  const rep = state.reputation || {};
+  let changes = [];
+
+  // Check for changes
+  const worldChanged = Object.keys(worldDelta).length > 0;
+  const personalChanged = Object.keys(personalDelta).length > 0;
+
+  // === World Reputation Changes ===
+  if (worldChanged) {
+    const worldChanges = Object.entries(worldDelta)
+      .map(([faction, delta]) => `${faction} ${delta >= 0 ? "+" : ""}${delta}`)
+      .join("  ");
+    changes.push(`[World Reputation Change] ${worldChanges}`);
+    changes.push(`[World Reputation] ${getReputationSummary(state)}`);
+  }
+
+  // === Personal Reputation Changes ===
+  if (personalChanged) {
+    const personalChanges = Object.entries(personalDelta)
+      .map(([cat, delta]) => `${cat} ${delta >= 0 ? "+" : ""}${delta}`)
+      .join("  ");
+    const personalSummary = ` Charmer:${rep.Charmer || 0} Honorable:${rep.Honorable || 0} Rogue:${rep.Rogue || 0} Dominant:${rep.Dominant || 0} Submissive:${rep.Submissive || 0} Prankster:${rep.Prankster || 0} Curious:${rep.Curious || 0} Innocent:${rep.Innocent || 0} Mischievous:${rep.Mischievous || 0} Affectionate:${rep.Affectionate || 0} Defiant:${rep.Defiant || 0} Brave:${rep.Brave || 0} Clever:${rep.Clever || 0} Playful:${rep.Playful || 0}`;
+    changes.push(`[Personal Reputation Change] ${personalChanges}`);
+    changes.push(personalSummary);
+  }
+
+   // --- NPC Reactions ---
+  let reactionLine = "";
+  const age = (state.ages?.player ?? 0);
+  const style = state.narrationStyle || "classic";
+
+// --- Legendary/Unique Reactions (highest priority) ---
+if (
+  rep.Honorable >= 80 &&
+  rep.Dominant >= 80 &&
+  rep.Charmer >= 70 &&
+  getAgeBracket(age) === "adult"
+) {
+  reactionLine = pickLine(legendaryLawbringerLines, style);
+}
+else if (
+  rep.Rogue >= 65 &&
+  rep.Prankster >= 60 &&
+  rep.Clever >= 55 &&
+  (getAgeBracket(age) === "youth" || getAgeBracket(age) === "adult")
+) {
+  reactionLine = pickLine(infamousTricksterLines, style);
+}
+else if (
+  rep.Curious >= 75 &&
+  rep.Clever >= 75 &&
+  rep.Brave >= 60 &&
+  (getAgeBracket(age) === "youth" || getAgeBracket(age) === "adult")
+) {
+  reactionLine = pickLine(geniusExplorerLines, style);
+}
+else if (
+  rep.Charmer >= 80 &&
+  rep.Honorable >= 65 &&
+  getAgeBracket(age) === "adult"
+) {
+  reactionLine = pickLine(patronOfTheArtsLines, style);
+}
+else if (
+  rep.Honorable >= 65 &&
+  rep.Clever >= 70 &&
+  rep.Dominant >= 60 &&
+  getAgeBracket(age) === "adult"
+) {
+  reactionLine = pickLine(visionaryReformerLines, style);
+}
+else if (
+  rep.Rogue >= 75 &&
+  rep.Honorable <= -30 &&
+  rep.Clever >= 60 &&
+  getAgeBracket(age) === "adult"
+) {
+  reactionLine = pickLine(poisonerLines, style);
+}
+else if (
+  rep.Charmer >= 90 &&
+  rep.Submissive >= 60 &&
+  rep.Dominant <= 20 &&
+  getAgeBracket(age) === "adult"
+) {
+  reactionLine = pickLine(courtierLines, style);
+}
+else if (
+  rep.Clever >= 65 &&
+  rep.Curious >= 60 &&
+  (getAgeBracket(age) === "child" || getAgeBracket(age) === "youth")
+) {
+  reactionLine = pickLine(childProdigyLines, style);
+}
+else if (
+  rep.Innocent >= 70 &&
+  rep.Affectionate >= 70 &&
+  getAgeBracket(age) === "child"
+) {
+  reactionLine = pickLine(saintlyInnocentLines, style);
+}
+
+// --- High-Value Pair & Peak Trait Reactions (if none above matched) ---
+if (!reactionLine) {
+  if (rep.Charmer >= 25 && rep.Honorable >= 26) {
+    reactionLine = pickLine(charmerHonorableLines, style);
+  }
+  else if (rep.Dominant >= 24 && rep.Charmer >= 26) {
+    reactionLine = pickLine(dominantCharmerLines, style);
+  }
+  else if (rep.Clever >= 27 && rep.Honorable >= 27) {
+    reactionLine = pickLine(cleverHonorableLines, style);
+  }
+  else if (rep.Innocent >= 16 && rep.Affectionate >= 26) {
+    reactionLine = pickLine(innocentAffectionatePeakLines, style);
+  }
+  else if (rep.Curious >= 27 && rep.Clever >= 26) {
+    reactionLine = pickLine(curiousCleverPeakLines, style);
+  }
+  else if (rep.Dominant >= 29 && rep.Honorable >= 27) {
+    reactionLine = pickLine(sternHonorableLines, style);
+  }
+  else if (rep.Prankster >= 27 && rep.Playful >= 26) {
+    reactionLine = pickLine(pranksterPlayfulLines, style);
+  }
+  else if (rep.Affectionate >= 14) {
+    reactionLine = pickLine(affectionatePeakLines, style);
+  }
+  else if (rep.Curious >= 16) {
+    reactionLine = pickLine(curiousPeakLines, style);
+  }
+  else if (rep.Dominant >= 15) {
+    reactionLine = pickLine(dominantPeakLines, style);
+  }
+  else if (rep.Charmer >= 19) {
+    reactionLine = getCharmerPeakLine(age, style);
+  }
+  else if (rep.Innocent >= 19) {
+    reactionLine = pickLine(innocentPeakLines, style);
+  }
+}
+
+// --- Base Reputation Pair Reactions (if STILL none matched) ---
+if (!reactionLine) {
+  if (rep.Charmer >= 6 && rep.Dominant >= 3) {
+    reactionLine = pickLine(charmerDominantLines, style);
+  }
+  else if (rep.Honorable >= 5 && rep.Submissive >= 3) {
+    reactionLine = pickLine(honorableSubmissiveLines, style);
+  }
+  else if (rep.Rogue >= 5 && rep.Prankster >= 3) {
+    reactionLine = pickLine(roguePranksterLines, style);
+  }
+  else if (rep.Curious >= 5 && rep.Clever >= 3) {
+    reactionLine = pickLine(curiousCleverLines, style);
+  }
+  else if (rep.Innocent >= 5 && rep.Affectionate >= 4) {
+    reactionLine = pickLine(innocentAffectionateLines, style);
+  }
+  else if (rep.Mischievous >= 5 && rep.Playful >= 4) {
+    reactionLine = pickLine(mischievousPlayfulLines, style);
+  }
+  else if (rep.Brave >= 5 && rep.Defiant >= 4) {
+    reactionLine = pickLine(braveDefiantLines, style);
+  }
+  else if (rep.Clever >= 5 && rep.Defiant >= 3) {
+    reactionLine = pickLine(cleverDefiantLines, style);
+  }
+  else if (rep.Playful >= 5 && rep.Affectionate >= 3) {
+    reactionLine = pickLine(playfulAffectionateLines, style);
+  }
+}
+
+  // --- Output only if changed since last reaction ---
+  if (reactionLine && reactionLine !== state.lastReactionLine) {
+    text = `${reactionLine}\n\n${text}`;
+    state.lastReactionLine = reactionLine;
+  }
+  // --- Example: pick a reaction if Charmer or Prankster went up ---
+  let lastChange = state.lastPersonalReputationChange || {};
+  let phrase = "";
+
+  if (lastChange.Charmer > 0) {
+    phrase = reactionPhrases.Charmer.Positive[
+      Math.floor(Math.random() * reactionPhrases.Charmer.Positive.length)
+    ];
+  }
+  else if (lastChange.Prankster > 0) {
+    phrase = reactionPhrases.Prankster.Positive[
+      Math.floor(Math.random() * reactionPhrases.Prankster.Positive.length)
+    ];
+  }
+  if (phrase) {
+    text = insertNPCReaction(text, phrase);
+  }
+
+
+
+   // --- Clear rep deltas ---
+  state.lastWorldReputationChange = {};
+  state.lastPersonalReputationChange = {};
+
+
+  // --- Final output, stacking all pieces in order ---
+  let outText = text;
+  if (changes.length > 0) outText = [outText, ...changes].join("\n\n");
+
+  return { text: outText };
+};
+
+// Don't modify this part
+modifier(text);
