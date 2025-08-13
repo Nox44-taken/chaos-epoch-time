@@ -277,10 +277,15 @@ state.heatlogs = heatlogs;
     changes.push(personalSummary);
   }
 
-   // --- NPC Reactions ---
+     // --- NPC Reactions ---
   let reactionLine = "";
   const age = (state.ages?.player ?? 0);
   const style = state.narrationStyle || "classic";
+const pickLine = (narratStyle, style) => {
+  // narratStyle = descriptive tone, style = narration style like "classic"
+  return `Change the NPC reaction to ${narratStyle} tone using ${style} narration:`;
+};
+
 
 // --- Legendary/Unique Reactions (highest priority) ---
 if (
@@ -390,37 +395,6 @@ if (!reactionLine) {
   }
   else if (rep.Innocent >= 19) {
     reactionLine = pickLine(innocentPeakLines, style);
-  }
-}
-
-// --- Base Reputation Pair Reactions (if STILL none matched) ---
-if (!reactionLine) {
-  if (rep.Charmer >= 6 && rep.Dominant >= 3) {
-    reactionLine = pickLine(charmerDominantLines, style);
-  }
-  else if (rep.Honorable >= 5 && rep.Submissive >= 3) {
-    reactionLine = pickLine(honorableSubmissiveLines, style);
-  }
-  else if (rep.Rogue >= 5 && rep.Prankster >= 3) {
-    reactionLine = pickLine(roguePranksterLines, style);
-  }
-  else if (rep.Curious >= 5 && rep.Clever >= 3) {
-    reactionLine = pickLine(curiousCleverLines, style);
-  }
-  else if (rep.Innocent >= 5 && rep.Affectionate >= 4) {
-    reactionLine = pickLine(innocentAffectionateLines, style);
-  }
-  else if (rep.Mischievous >= 5 && rep.Playful >= 4) {
-    reactionLine = pickLine(mischievousPlayfulLines, style);
-  }
-  else if (rep.Brave >= 5 && rep.Defiant >= 4) {
-    reactionLine = pickLine(braveDefiantLines, style);
-  }
-  else if (rep.Clever >= 5 && rep.Defiant >= 3) {
-    reactionLine = pickLine(cleverDefiantLines, style);
-  }
-  else if (rep.Playful >= 5 && rep.Affectionate >= 3) {
-    reactionLine = pickLine(playfulAffectionateLines, style);
   }
 }
 
