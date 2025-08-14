@@ -9015,6 +9015,7 @@ function storeCurrToSC() {
   currSC.entry =
     `Current Heat: ${state.heat}\n` +
     `Current Temperature: ${state.storyTemperature}\n` +
+    `Current turn: ${state.turnNum_SAE}\n` +
     `Authors Note: ${state.authorsNoteStorage}`;
  // initialize description 
 if (!currSC.description) {
