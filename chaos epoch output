@@ -396,7 +396,7 @@ if (!reactionLine) {
     reactionLine = pickLine(dominantPeakLines, style);
   }
   else if (rep.Charmer >= 19) {
-    reactionLine = getCharmerPeakLine(age, style);
+    reactionLine = pickLine(charmerPeakLines, style);
   }
   else if (rep.Innocent >= 19) {
     reactionLine = pickLine(innocentPeakLines, style);
