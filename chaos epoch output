@@ -287,8 +287,7 @@ state.heatlogs = heatlogs;
   const age = (state.ages?.player ?? 0);
   const style = state.narrationStyle || "classic";
 const pickLine = (narratStyle, style) => {
-  // narratStyle = descriptive tone, style = narration style like "classic"
-  return `Change the NPC reaction to ${narratStyle} tone using ${style} narration:`;
+
 };
 
 
