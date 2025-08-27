@@ -110,7 +110,7 @@ function AutoCards(inHook, inText, inStop) {
 
     // Titles banned from future card generation attempts?
     const DEFAULT_BANNED_TITLES_LIST = (
-        "North, East, South, West, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, January, February, March, April, May, June, July, August, September, October, November, December, Story Arc Settings, Story Arc, Updating Story Arc Next Turn, Charmer, Honorable, Rogue, Dominant, Submissive, Prankster, Curious, Innocent, Mischievous, Affectionate, Defiant, Brave, Clever, Playful"
+        "North, East, South, West, Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, January, February, March, April, May, June, July, August, September, October, November, December,  New Story Arc, Story Arc, Generate Story Arc, Redo Story Arc, Him, Her, She, His, Hers, Theirs, Both, Them, They, Ours, Our, We're, They're, And, But, When, Why, Who, What, Us, We, Story Arc Engine, Scales, Set Story Arc Type, Type, New, NEW, Time, TIME, Intensity, Year, Story Arc Settings, Story Arc, Updating Story Arc Next Turn, Charmer, Honorable, Rogue, Dominant, Submissive, Prankster, Curious, Innocent, Mischievous, Affectionate, Defiant, Brave, Clever, Playful, Month, Year, Day, Minute"
     ); // (mimic this comma-list "text" format)
 
     // Default story card "type" used by Auto-Cards? (does not matter)
